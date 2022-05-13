@@ -28,12 +28,12 @@ def search(doctype='order', eisdocno='0366300038722000139'):
         src = file.read()
     soup = BeautifulSoup(src, 'lxml')
     wrapper = soup.find('div', class_="cardWrapper outerWrapper").find('div', class_="wrapper").find_all('script')
-    res = re.findall(r'sid: .*?,', wrapper[-1].text, re.DOTALL)[0].replace('sid: ', '').replace(',', '')
+    res = re.findall(r'sid: .*?,', wrapper[-1].text, re.DOTALL)[0].replace("sid: '", '').replace("',", '')
     print(res, type(res))
     url_history = f'https://zakupki.gov.ru/epz/order/notice/card/event/journal/list.html?sid={res}&page=1&pageSize=10'
     u ='https://zakupki.gov.ru/epz/order/notice/card/event/journal/list.html?sid=' + res + '&page=1&pageSize=10'
-    print(u)
-    print(url_history)
+    print(u, type(u))
+    print(url_history, type(url_history))
     r = requests.get(u, headers=headers)
     print(r.text)
 
