@@ -3,7 +3,6 @@ from bs4 import BeautifulSoup
 import lxml
 import re
 import datetime
-from dateutil import parser
 
 
 def search_last_publication_date(doctype='order', eisdocno='0366200035622001408'):
@@ -42,9 +41,11 @@ def search_last_publication_date(doctype='order', eisdocno='0366200035622001408'
     tbody = soup.find('table', class_="table mb-0 displaytagTable").find('tbody')
     '''Список записей таблицы'''
     rows = tbody.find_all(class_="table__row")
+
     '''Перебираем список записей на предмет публикации извещения или изменения извещения'''
     res_rows = []
-    last_publication_date = parser.parse('1970-01-01 00:00:00')
+    last_publication_date = datetime.datetime.strptime('01.01.1970 00:00', '%d.%m.%Y %H:%M')
+
     for row in rows:
         date = row.find_all(class_="table__cell table__cell-body")[0].text.strip().replace(' (МСК)', '')
         event = row.find_all(class_="table__cell table__cell-body")[1].text.strip()
@@ -54,16 +55,16 @@ def search_last_publication_date(doctype='order', eisdocno='0366200035622001408'
         if doctype == 'order' and (
             'Размещен документ «Извещение о проведении' in event or 'Размещен документ «Изменение извещения о проведении' in event
         ):
-            if last_publication_date < parser.parse(date):
-                last_publication_date = parser.parse(date)
-            res_rows.append((date, event))
+            if last_publication_date < datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'):
+                last_publication_date = datetime.datetime.strptime(date, '%d.%m.%Y %H:%M')
+            res_rows.append((date, datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'), event))
 
     '''Отладка'''
     print('*******************************************')
     print(res_rows)
     print('*******************************************')
     print(last_publication_date, type(last_publication_date), '+++' )
-#     datetime.datetime.strftime(last_publication_date, '%H')
+
     return last_publication_date
 
 
