@@ -1,6 +1,8 @@
 from ftplib import FTP
 import os
 import datetime
+import zipfile
+import time
 
 
 def create_dir(directory_name = 'Temp'):
@@ -10,8 +12,14 @@ def create_dir(directory_name = 'Temp'):
 
 def clean_dir(directory_name):
     for path, dirs, files in os.walk(directory_name):
-        for file in files:
-            os.unlink(os.path.join(path, file))
+        if files:
+            for file in files:
+                os.unlink(os.path.join(path, file))
+    for path, dirs, files in os.walk(directory_name):
+        if dirs:
+            for dir in dirs:
+                os.unlink(os.path.join(path, dir))
+
 
 
 def dir_choice(last_publication_date, date_now = datetime.datetime.now()):
@@ -36,6 +44,7 @@ def dir_choice(last_publication_date, date_now = datetime.datetime.now()):
 
 def ftp_search(region = 'Tulskaja_obl', doctype='order', eisdocno='0366200035622001408', last_publication_date = datetime.datetime.strptime('12.04.2022 17:26', '%d.%m.%Y %H:%M')):
     '''Поиск файлов на ФТП и закачка их во временную папку'''
+
     '''Словарь типов документов (ключ: часть ссылки в адресной строке, значение: папка на фтп)'''
     doctype_dict = {
         'order': 'notifications'
@@ -52,24 +61,41 @@ def ftp_search(region = 'Tulskaja_obl', doctype='order', eisdocno='0366200035622
     directory = dir_choice(last_publication_date = last_publication_date)
     ftp.cwd(f'fcs_regions//{region}//{doctype_dict.get(doctype)}//{directory}')
 
-    files = []
+    if directory in ('currMonth', 'prevMonth'):
+        last_publication_date_str = datetime.datetime.strftime(last_publication_date, '%Y%m%d')
+    else:
+        last_publication_date_str = datetime.datetime.strftime(last_publication_date, '%Y%m')
+
+    create_dir(directory_name='Temp')
+    create_dir(directory_name=f'Temp//{eisdocno}')
+    create_dir(directory_name=f'Temp//{eisdocno}//{last_publication_date_str}')
+    # clean_dir(directory_name='Temp')
+    # clean_dir(f'Temp//{eisdocno}')
+    clean_dir(f'Temp//{eisdocno}//{last_publication_date_str}')
+
     '''Создаем список файлов работчей папки ФТП'''
+    files = []
     ftp.dir(files.append)
     '''Перебираем каждый архив из списка файлов - скачиваем в темп, ищем нужный файл в архиве'''
+    print('****************ftp_search*****************')
     for file in files:
         tokens = file.split()
         file_name = tokens[8]
-        if directory in ('currMonth', 'prevMonth'):
-            last_publication_date_str = datetime.datetime.strftime(last_publication_date, '%Y%m%d')
-            if file_name.startswith(f'{filename_dict.get(doctype)}_{region}_{last_publication_date_str}'):
-                with open(file_name, 'wb') as f:
-                    ftp.retrbinary('RETR ' + file_name, f.write)
-        else:
-            last_publication_date_str = datetime.datetime.strftime(last_publication_date, '%Y%m')
+        if file_name.startswith(f'{filename_dict.get(doctype)}_{region}_{last_publication_date_str}'):
+            with open(f'Temp//{eisdocno}//{last_publication_date_str}//{file_name}', 'wb') as f:
+                ftp.retrbinary('RETR ' + file_name, f.write)
+            z = zipfile.ZipFile(f'Temp//{eisdocno}//{last_publication_date_str}//{file_name}', 'r')
+            for item in z.namelist():
+                if item.endswith('.xml') and eisdocno in item:
+                    z.extract(item, f'Temp//{eisdocno}//{last_publication_date_str}')
+                    print(f'Файл {item} распакован')
 
     ftp.close()
 
+
 if __name__ == '__main__':
-    create_dir(directory_name='Temp')
-    clean_dir(directory_name='Temp')
+    # create_dir(directory_name='Temp')
+    # clean_dir(directory_name='Temp')
     ftp_search()
+
+
