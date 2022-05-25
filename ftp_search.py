@@ -86,16 +86,17 @@ def ftp_search(region = 'Tulskaja_obl', doctype='order', eisdocno='0366200035622
                 ftp.retrbinary('RETR ' + file_name, f.write)
             z = zipfile.ZipFile(f'Temp//{eisdocno}//{last_publication_date_str}//{file_name}', 'r')
             for item in z.namelist():
-                if item.endswith('.xml') and eisdocno in item:
+                if item.endswith('.xml') and eisdocno in item and 'Notification' in item:
                     z.extract(item, f'Temp//{eisdocno}//{last_publication_date_str}')
                     print(f'Файл {item} распакован')
 
     ftp.close()
+    return last_publication_date_str
 
 
 if __name__ == '__main__':
-    # create_dir(directory_name='Temp')
-    # clean_dir(directory_name='Temp')
     ftp_search()
+
+
 
 

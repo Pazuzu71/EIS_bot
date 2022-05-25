@@ -1,6 +1,5 @@
 import requests
 from bs4 import BeautifulSoup
-import lxml
 import re
 import datetime
 
@@ -30,7 +29,6 @@ def search_last_publication_date(doctype='order', eisdocno='0366200035622001014'
     sid = re.findall(r'sid: .*?,', wrapper[-1].text, re.DOTALL)[0].replace("sid: '", '').replace("',", '')
     '''Получаем ссылку на ту часть журнала, что формируется динамикой. Сохраняем ее в отдельный файл. Из супа вытаскиваем дату последней публикации.'''
     url_history = f'https://zakupki.gov.ru/epz/order/notice/card/event/journal/list.html?sid={sid}&page=1&pageSize=100'
-    # print(url_history)
     r = requests.get(url_history, headers=headers)
     with open('journal.html', 'w', encoding='utf-8') as file:
         file.write(r.text)
@@ -49,7 +47,7 @@ def search_last_publication_date(doctype='order', eisdocno='0366200035622001014'
     for row in rows:
         date = row.find_all(class_="table__cell table__cell-body")[0].text.strip().replace(' (МСК)', '')
         event = row.find_all(class_="table__cell table__cell-body")[1].text.strip()
-        print(date, '+++', event)
+        # print(date, '+++', event)
 
         '''Закупки'''
         if doctype == 'order' and (
@@ -63,7 +61,7 @@ def search_last_publication_date(doctype='order', eisdocno='0366200035622001014'
     print('*******************************************')
     print(res_rows)
     print('*******************************************')
-    print(last_publication_date, type(last_publication_date), '+++' )
+    print('(last_publication_date)', last_publication_date, '+++')
 
     return last_publication_date
 
