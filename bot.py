@@ -34,14 +34,21 @@ def main():
             parameters['region'] = callback.data
             kb = types.InlineKeyboardMarkup(row_width=5)
             btn1 = types.InlineKeyboardButton('Извещение', callback_data='order')
-            kb.add(btn1)
+            btn2 = types.InlineKeyboardButton('Сведения о контракте', callback_data='contract')
+            kb.add(btn1, btn2)
             bot.edit_message_text(text='Выбрать тип документа', chat_id=callback.message.chat.id, message_id=callback.message.id,reply_markup=kb)
 
-        if callback.data == 'order':
+        if callback.data in ('order', 'contract'):
             parameters['doctype'] = callback.data
             sent = bot.edit_message_text(text='👇👇👇 Введите номер документа: 👇👇👇', chat_id=callback.message.chat.id, message_id=callback.message.id)
-            sent1 = bot.register_next_step_handler(sent, get_data)
-            # print('sent1', sent1)
+            bot.register_next_step_handler(sent, get_data)
+        #
+        # if callback.data == 'contract':
+        #     parameters['doctype'] = callback.data
+        #     sent = bot.edit_message_text(text='👇👇👇 Введите номер документа: 👇👇👇', chat_id=callback.message.chat.id, message_id=callback.message.id)
+        #     bot.register_next_step_handler(sent, get_data)
+
+
 
 
     def get_data(msg):
@@ -56,7 +63,11 @@ def main():
                                                last_publication_date=last_publication_date)
 
         '''Удаляем архивы после поиска xml'''
-        for path, dirs, files in os.walk(f'Temp//{parameters["eisdocno"]}//{last_publication_date_str}'):
+        if parameters['doctype'] == 'contract':
+            x = 'contracts'
+        if parameters['doctype'] == 'order':
+            x = 'notifications'
+        for path, dirs, files in os.walk(f'Temp//{x}//{parameters["eisdocno"]}//{last_publication_date_str}'):
             if files:
                 for file in files:
                     if file.endswith('.zip'):
@@ -66,13 +77,16 @@ def main():
                         file_to_send = open(os.path.join(path, file), 'rb')
                         bot.send_document(msg.chat.id, document=file_to_send)
                         file_to_send.close()
+            else:
+                print('Документов с такими типом и номером не найдено для указанного региона. Увы...')
+                bot.send_message(msg.chat.id, 'Документов с такими типом и номером не найдено для указанного региона. Увы...')
 
-    while True:
-        try:
-            bot.polling(none_stop=True, interval=0, timeout=20)
-        except:
-            print("Exception")
-    # bot.polling()
+    # while True:
+    #     try:
+    #         bot.polling(none_stop=True, interval=0, timeout=20)
+    #     except:
+    #         print("Exception")
+    bot.polling()
 
 
 if __name__ == '__main__':

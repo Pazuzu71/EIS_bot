@@ -2,7 +2,6 @@ from ftplib import FTP
 import os
 import datetime
 import zipfile
-import time
 
 
 def create_dir(directory_name = 'Temp'):
@@ -42,16 +41,18 @@ def dir_choice(last_publication_date, date_now = datetime.datetime.now()):
     return directory
 
 
-def ftp_search(region = 'Tulskaja_obl', doctype='order', eisdocno='0366200035622001408', last_publication_date = datetime.datetime.strptime('12.04.2022 17:26', '%d.%m.%Y %H:%M')):
+def ftp_search(region = 'Tulskaja_obl', doctype='contract', eisdocno='2710708377122000010', last_publication_date = datetime.datetime.strptime('25.05.2022 16:16', '%d.%m.%Y %H:%M')):
     '''Поиск файлов на ФТП и закачка их во временную папку'''
 
     '''Словарь типов документов (ключ: часть ссылки в адресной строке, значение: папка на фтп)'''
     doctype_dict = {
-        'order': 'notifications'
+        'order': 'notifications',
+        'contract': 'contracts'
     }
     '''Словарь имен документов (ключ: часть ссылки в адресной строке, значение: начало имени файла на фтп)'''
     filename_dict = {
-        'order': 'notification'
+        'order': 'notification',
+        'contract': 'contract'
     }
     '''Подключение к ФТП'''
     ftp = FTP('ftp.zakupki.gov.ru')
@@ -67,8 +68,9 @@ def ftp_search(region = 'Tulskaja_obl', doctype='order', eisdocno='0366200035622
         last_publication_date_str = datetime.datetime.strftime(last_publication_date, '%Y%m')
 
     create_dir(directory_name='Temp')
-    create_dir(directory_name=f'Temp//{eisdocno}')
-    create_dir(directory_name=f'Temp//{eisdocno}//{last_publication_date_str}')
+    create_dir(directory_name=f'Temp//{doctype_dict.get(doctype)}')
+    create_dir(directory_name=f'Temp//{doctype_dict.get(doctype)}//{eisdocno}')
+    create_dir(directory_name=f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}')
     # clean_dir(directory_name='Temp')
     # clean_dir(f'Temp//{eisdocno}')
     clean_dir(f'Temp//{eisdocno}//{last_publication_date_str}')
@@ -82,12 +84,12 @@ def ftp_search(region = 'Tulskaja_obl', doctype='order', eisdocno='0366200035622
         tokens = file.split()
         file_name = tokens[8]
         if file_name.startswith(f'{filename_dict.get(doctype)}_{region}_{last_publication_date_str}'):
-            with open(f'Temp//{eisdocno}//{last_publication_date_str}//{file_name}', 'wb') as f:
+            with open(f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}//{file_name}', 'wb') as f:
                 ftp.retrbinary('RETR ' + file_name, f.write)
-            z = zipfile.ZipFile(f'Temp//{eisdocno}//{last_publication_date_str}//{file_name}', 'r')
+            z = zipfile.ZipFile(f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}//{file_name}', 'r')
             for item in z.namelist():
-                if item.endswith('.xml') and eisdocno in item and 'Notification' in item:
-                    z.extract(item, f'Temp//{eisdocno}//{last_publication_date_str}')
+                if item.endswith('.xml') and eisdocno in item and ('Notification' in item or 'contract_' in item):
+                    z.extract(item, f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}')
                     print(f'Файл {item} распакован')
 
     ftp.close()
