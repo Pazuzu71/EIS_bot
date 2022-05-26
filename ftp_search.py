@@ -41,18 +41,20 @@ def dir_choice(last_publication_date, date_now = datetime.datetime.now()):
     return directory
 
 
-def ftp_search(region = 'Tulskaja_obl', doctype='contract', eisdocno='2710708377122000010', last_publication_date = datetime.datetime.strptime('25.05.2022 16:16', '%d.%m.%Y %H:%M')):
+def ftp_search(region = 'Tulskaja_obl', doctype='orderplan', eisdocno='202203663000336001', last_publication_date = datetime.datetime.strptime('26.05.2022 11:56', '%d.%m.%Y %H:%M')):
     '''Поиск файлов на ФТП и закачка их во временную папку'''
 
     '''Словарь типов документов (ключ: часть ссылки в адресной строке, значение: папка на фтп)'''
     doctype_dict = {
         'order': 'notifications',
-        'contract': 'contracts'
+        'contract': 'contracts',
+        'orderplan': 'plangraphs2020'
     }
     '''Словарь имен документов (ключ: часть ссылки в адресной строке, значение: начало имени файла на фтп)'''
     filename_dict = {
         'order': 'notification',
-        'contract': 'contract'
+        'contract': 'contract',
+        'orderplan': 'tenderPlan2020'
     }
     '''Подключение к ФТП'''
     ftp = FTP('ftp.zakupki.gov.ru')
@@ -88,7 +90,7 @@ def ftp_search(region = 'Tulskaja_obl', doctype='contract', eisdocno='2710708377
                 ftp.retrbinary('RETR ' + file_name, f.write)
             z = zipfile.ZipFile(f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}//{file_name}', 'r')
             for item in z.namelist():
-                if item.endswith('.xml') and eisdocno in item and ('Notification' in item or 'contract_' in item):
+                if item.endswith('.xml') and eisdocno in item and ('Notification' in item or 'contract_' in item or 'tenderPlan2020' in item):
                     z.extract(item, f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}')
                     print(f'Файл {item} распакован')
 

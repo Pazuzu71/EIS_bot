@@ -34,11 +34,12 @@ def main():
             parameters['region'] = callback.data
             kb = types.InlineKeyboardMarkup(row_width=5)
             btn1 = types.InlineKeyboardButton('Извещение', callback_data='order')
-            btn2 = types.InlineKeyboardButton('Сведения о контракте', callback_data='contract')
-            kb.add(btn1, btn2)
+            btn3 = types.InlineKeyboardButton('Сведения о контракте', callback_data='contract')
+            btn4 = types.InlineKeyboardButton('План-график 2020', callback_data='orderplan')
+            kb.add(btn1, btn3, btn4)
             bot.edit_message_text(text='Выбрать тип документа', chat_id=callback.message.chat.id, message_id=callback.message.id,reply_markup=kb)
 
-        if callback.data in ('order', 'contract'):
+        if callback.data in ('order', 'contract', 'orderplan'):
             parameters['doctype'] = callback.data
             sent = bot.edit_message_text(text='👇👇👇 Введите номер документа: 👇👇👇', chat_id=callback.message.chat.id, message_id=callback.message.id)
             bot.register_next_step_handler(sent, get_data)
@@ -67,6 +68,8 @@ def main():
             x = 'contracts'
         if parameters['doctype'] == 'order':
             x = 'notifications'
+        if parameters['doctype'] == 'orderplan':
+            x = 'plangraphs2020'
         for path, dirs, files in os.walk(f'Temp//{x}//{parameters["eisdocno"]}//{last_publication_date_str}'):
             if files:
                 for file in files:
