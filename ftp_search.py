@@ -48,13 +48,15 @@ def ftp_search(region = 'Tulskaja_obl', doctype='orderplan', eisdocno='202203663
     doctype_dict = {
         'order': 'notifications',
         'contract': 'contracts',
-        'orderplan': 'plangraphs2020'
+        'orderplan': 'plangraphs2020',
+        'protocol': 'protocols'
     }
     '''Словарь имен документов (ключ: часть ссылки в адресной строке, значение: начало имени файла на фтп)'''
     filename_dict = {
         'order': 'notification',
         'contract': 'contract',
-        'orderplan': 'tenderPlan2020'
+        'orderplan': 'tenderPlan2020',
+        'protocol': 'Protocol'
     }
     '''Подключение к ФТП'''
     ftp = FTP('ftp.zakupki.gov.ru')
@@ -81,16 +83,17 @@ def ftp_search(region = 'Tulskaja_obl', doctype='orderplan', eisdocno='202203663
     files = []
     ftp.dir(files.append)
     '''Перебираем каждый архив из списка файлов - скачиваем в темп, ищем нужный файл в архиве'''
-    print('****************ftp_search*****************')
+    # print('****************ftp_search*****************')
+    # print(files)
     for file in files:
         tokens = file.split()
         file_name = tokens[8]
-        if file_name.startswith(f'{filename_dict.get(doctype)}_{region}_{last_publication_date_str}'):
+        if file_name.startswith(f'{filename_dict.get(doctype).lower()}_{region}_{last_publication_date_str}'):
             with open(f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}//{file_name}', 'wb') as f:
                 ftp.retrbinary('RETR ' + file_name, f.write)
             z = zipfile.ZipFile(f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}//{file_name}', 'r')
             for item in z.namelist():
-                if item.endswith('.xml') and eisdocno in item and ('Notification' in item or 'contract_' in item or 'tenderPlan2020' in item):
+                if item.endswith('.xml') and eisdocno in item and ('Notification' in item or 'contract_' in item or 'tenderPlan2020' in item or 'Protocol' in item):
                     z.extract(item, f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}')
                     print(f'Файл {item} распакован')
 

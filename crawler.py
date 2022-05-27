@@ -4,19 +4,19 @@ import re
 import datetime
 
 
-def search_last_publication_date(doctype='orderplan', eisdocno='202203663000336001'):
+def search_last_publication_date(doctype='protocol', eisdocno='0166300024722000170'):
     headers = {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36'
         }
     '''Ищем документ через штатный поиск ЕИС. В Ссылку подставляем тим документа и номер.'''
 
-    if doctype == 'order':
-        url = f'https://zakupki.gov.ru/epz/{doctype}/extendedsearch/results.html?searchString={eisdocno}'
+    if doctype in ('order', 'protocol'):
+        url = f'https://zakupki.gov.ru/epz/order/extendedsearch/results.html?searchString={eisdocno}'
     if doctype == 'contract':
-        url = f'https://zakupki.gov.ru/epz/{doctype}/search/results.html?searchString={eisdocno}'
+        url = f'https://zakupki.gov.ru/epz/contract/search/results.html?searchString={eisdocno}'
     if doctype == 'orderplan':
-        url = f'https://zakupki.gov.ru/epz/{doctype}/search/results.html?searchString={eisdocno}'
+        url = f'https://zakupki.gov.ru/epz/orderplan/search/results.html?searchString={eisdocno}'
 
     r = requests.get(url, headers=headers)
     with open('index.html', 'w', encoding='utf-8') as file:
@@ -41,7 +41,7 @@ def search_last_publication_date(doctype='orderplan', eisdocno='2022036630003360
         sid = re.findall(r'sid: .*?,', wrapper[-1].text, re.DOTALL)[0].replace("sid: '", '').replace("',", '')
         # print(sid)
         '''Получаем ссылку на ту часть журнала, что формируется динамикой. Сохраняем ее в отдельный файл. Из супа вытаскиваем дату последней публикации.'''
-        if doctype == 'order':
+        if doctype in ('order', 'protocol'):
             url_history = f'https://zakupki.gov.ru/epz/order/notice/card/event/journal/list.html?sid={sid}&page=1&pageSize=100'
         if doctype == 'contract':
             url_history = f'https://zakupki.gov.ru/epz/contract/card/event/journal/list.html?sid={sid}&page=1&pageSize=100'
@@ -60,6 +60,7 @@ def search_last_publication_date(doctype='orderplan', eisdocno='2022036630003360
         # print(rows)
         '''Перебираем список записей на предмет публикации извещения или изменения извещения'''
         res_rows = []
+        dates = []
         last_publication_date = datetime.datetime.strptime('01.01.1970 00:00', '%d.%m.%Y %H:%M')
 
         for row in rows:
@@ -78,16 +79,33 @@ def search_last_publication_date(doctype='orderplan', eisdocno='2022036630003360
                 if last_publication_date < datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'):
                     last_publication_date = datetime.datetime.strptime(date, '%d.%m.%Y %H:%M')
                 res_rows.append((date, datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'), event))
+                dates.append(last_publication_date)
+            '''Все даты по указанным событиям'''
+
+            if (doctype == 'protocol' and
+                    ('Размещен «Протокол' in event)
+            ):
+                res_rows.append((date, datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'), event))
+                dates.append(datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'))
 
         '''Отладка'''
         print('*******************************************')
         print(res_rows)
         print('*******************************************')
+        print(dates)
+        print('*******************************************')
+        print(*dates)
+        print('*******************************************')
         print('(last_publication_date)', last_publication_date, '+++')
 
-        return last_publication_date
+        return dates
+
+        # return last_publication_date
     else:
-        return datetime.datetime.strptime('01.01.1970 00:00', '%d.%m.%Y %H:%M')
+        dates = []
+        dates.append(datetime.datetime.strptime('01.01.1970 00:00', '%d.%m.%Y %H:%M'))
+        return dates
+        # return datetime.datetime.strptime('01.01.1970 00:00', '%d.%m.%Y %H:%M')
 
 
 if __name__ == '__main__':

@@ -32,14 +32,15 @@ def main():
 
         if callback.data == 'Tulskaja_obl':
             parameters['region'] = callback.data
-            kb = types.InlineKeyboardMarkup(row_width=5)
+            kb = types.InlineKeyboardMarkup(row_width=2)
             btn1 = types.InlineKeyboardButton('Извещение', callback_data='order')
+            btn2 = types.InlineKeyboardButton('Все протоколы по закупке', callback_data='protocol')
             btn3 = types.InlineKeyboardButton('Сведения о контракте', callback_data='contract')
             btn4 = types.InlineKeyboardButton('План-график 2020', callback_data='orderplan')
-            kb.add(btn1, btn3, btn4)
+            kb.add(btn1, btn2, btn3, btn4)
             bot.edit_message_text(text='Выбрать тип документа', chat_id=callback.message.chat.id, message_id=callback.message.id,reply_markup=kb)
 
-        if callback.data in ('order', 'contract', 'orderplan'):
+        if callback.data in ('order', 'contract', 'orderplan', 'protocol'):
             parameters['doctype'] = callback.data
             sent = bot.edit_message_text(text='👇👇👇 Введите номер документа: 👇👇👇', chat_id=callback.message.chat.id, message_id=callback.message.id)
             bot.register_next_step_handler(sent, get_data)
@@ -56,33 +57,38 @@ def main():
         '''По полученным данным делаем дела'''
         parameters['eisdocno'] = msg.text
         print(parameters)
-
-        last_publication_date = search_last_publication_date(doctype=parameters['doctype'],
+        last_publication_dates = search_last_publication_date(doctype=parameters['doctype'],
                                                              eisdocno=parameters['eisdocno'])
-        last_publication_date_str = ftp_search(region=parameters['region'], doctype=parameters['doctype'],
-                                               eisdocno=parameters['eisdocno'],
-                                               last_publication_date=last_publication_date)
+        print('last_publication_dates', last_publication_dates)
+        # last_publication_date = search_last_publication_date(doctype=parameters['doctype'],
+        #                                                      eisdocno=parameters['eisdocno'])[0]
+        for last_publication_date in last_publication_dates:
+            last_publication_date_str = ftp_search(region=parameters['region'], doctype=parameters['doctype'],
+                                                   eisdocno=parameters['eisdocno'],
+                                                   last_publication_date=last_publication_date)
 
-        '''Удаляем архивы после поиска xml'''
-        if parameters['doctype'] == 'contract':
-            x = 'contracts'
-        if parameters['doctype'] == 'order':
-            x = 'notifications'
-        if parameters['doctype'] == 'orderplan':
-            x = 'plangraphs2020'
-        for path, dirs, files in os.walk(f'Temp//{x}//{parameters["eisdocno"]}//{last_publication_date_str}'):
-            if files:
-                for file in files:
-                    if file.endswith('.zip'):
-                        os.unlink(os.path.join(path, file))
-                    else:
-                        # bot.send_message(msg.chat.id, f'Нашел {file}')
-                        file_to_send = open(os.path.join(path, file), 'rb')
-                        bot.send_document(msg.chat.id, document=file_to_send)
-                        file_to_send.close()
-            else:
-                print('Документов с такими типом и номером не найдено для указанного региона. Увы...')
-                bot.send_message(msg.chat.id, 'Документов с такими типом и номером не найдено для указанного региона. Увы...')
+            '''Удаляем архивы после поиска xml'''
+            if parameters['doctype'] == 'contract':
+                x = 'contracts'
+            if parameters['doctype'] == 'order':
+                x = 'notifications'
+            if parameters['doctype'] == 'orderplan':
+                x = 'plangraphs2020'
+            if parameters['doctype'] == 'protocol':
+                x = 'protocols'
+            for path, dirs, files in os.walk(f'Temp//{x}//{parameters["eisdocno"]}//{last_publication_date_str}'):
+                if files:
+                    for file in files:
+                        if file.endswith('.zip'):
+                            os.unlink(os.path.join(path, file))
+                        else:
+                            # bot.send_message(msg.chat.id, f'Нашел {file}')
+                            file_to_send = open(os.path.join(path, file), 'rb')
+                            bot.send_document(msg.chat.id, document=file_to_send)
+                            file_to_send.close()
+                else:
+                    print('Документов с такими типом и номером не найдено для указанного региона. Увы...')
+                    bot.send_message(msg.chat.id, 'Документов с такими типом и номером не найдено для указанного региона. Увы...')
 
     # while True:
     #     try:
