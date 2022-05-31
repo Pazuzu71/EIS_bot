@@ -11,12 +11,14 @@ def search_last_publication_date(doctype='protocol', eisdocno='01663000247220001
         }
     '''Ищем документ через штатный поиск ЕИС. В Ссылку подставляем тим документа и номер.'''
 
-    if doctype in ('order', 'protocol'):
+    if doctype in ('order', 'protocol') and len(eisdocno) == 19:
         url = f'https://zakupki.gov.ru/epz/order/extendedsearch/results.html?searchString={eisdocno}'
-    if doctype == 'contract':
+    elif doctype == 'contract' and len(eisdocno) == 19:
         url = f'https://zakupki.gov.ru/epz/contract/search/results.html?searchString={eisdocno}'
-    if doctype == 'orderplan':
+    elif doctype == 'orderplan' and len(eisdocno) == 18:
         url = f'https://zakupki.gov.ru/epz/orderplan/search/results.html?searchString={eisdocno}'
+    else:
+        url = f'https://zakupki.gov.ru/epz/orderplan/search/results.html?searchString=None'
 
     r = requests.get(url, headers=headers)
     with open('index.html', 'w', encoding='utf-8') as file:
@@ -67,9 +69,16 @@ def search_last_publication_date(doctype='protocol', eisdocno='01663000247220001
             date = row.find_all(class_="table__cell table__cell-body")[0].text.strip().replace(' (МСК)', '')
             event = row.find_all(class_="table__cell table__cell-body")[1].text.strip()
             # print(date, '+++', event)
-
+            '''Все даты по указанным событиям'''
             '''Последнее событие в журнале событий, удовлетворяющее параметрам запроса'''
-            if (doctype == 'order' and
+
+            if (doctype == 'protocol' and
+                    ('Размещен «Протокол' in event)
+            ):
+                res_rows.append((date, datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'), event))
+                dates.append(datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'))
+
+            elif (doctype == 'order' and
                 ('Размещен документ «Извещение о проведении' in event or 'Размещен документ «Изменение извещения о проведении' in event)
             ) or (doctype == 'contract' and
                    ('Размещена информация о заключенном контракте' in event or 'Размещена информация об изменении заключенного контракта' in event)
@@ -79,22 +88,15 @@ def search_last_publication_date(doctype='protocol', eisdocno='01663000247220001
                 if last_publication_date < datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'):
                     last_publication_date = datetime.datetime.strptime(date, '%d.%m.%Y %H:%M')
                 res_rows.append((date, datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'), event))
-                dates.append(last_publication_date)
-            '''Все даты по указанным событиям'''
+        if not dates:
+            dates.append(last_publication_date)
 
-            if (doctype == 'protocol' and
-                    ('Размещен «Протокол' in event)
-            ):
-                res_rows.append((date, datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'), event))
-                dates.append(datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'))
 
         '''Отладка'''
-        print('*******************************************')
+        print('***************res_rows********************')
         print(res_rows)
-        print('*******************************************')
+        print('****************dates**********************')
         print(dates)
-        print('*******************************************')
-        print(*dates)
         print('*******************************************')
         print('(last_publication_date)', last_publication_date, '+++')
 

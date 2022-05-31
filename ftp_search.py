@@ -64,13 +64,14 @@ def ftp_search(region = 'Tulskaja_obl', doctype='orderplan', eisdocno='202203663
     ftp.set_pasv(True)
     '''Рабочая папка на фтп '''
     directory = dir_choice(last_publication_date = last_publication_date)
+
     ftp.cwd(f'fcs_regions//{region}//{doctype_dict.get(doctype)}//{directory}')
 
     if directory in ('currMonth', 'prevMonth'):
         last_publication_date_str = datetime.datetime.strftime(last_publication_date, '%Y%m%d')
     else:
         last_publication_date_str = datetime.datetime.strftime(last_publication_date, '%Y%m')
-
+    print('last_publication_date_str', last_publication_date_str)
     create_dir(directory_name='Temp')
     create_dir(directory_name=f'Temp//{doctype_dict.get(doctype)}')
     create_dir(directory_name=f'Temp//{doctype_dict.get(doctype)}//{eisdocno}')
@@ -88,7 +89,8 @@ def ftp_search(region = 'Tulskaja_obl', doctype='orderplan', eisdocno='202203663
     for file in files:
         tokens = file.split()
         file_name = tokens[8]
-        if file_name.startswith(f'{filename_dict.get(doctype).lower()}_{region}_{last_publication_date_str}'):
+        if file_name.startswith(f'{filename_dict.get(doctype).lower()}_{region}_{last_publication_date_str}') or \
+                file_name.startswith(f'{filename_dict.get(doctype)}_{region}_{last_publication_date_str}'):
             with open(f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}//{file_name}', 'wb') as f:
                 ftp.retrbinary('RETR ' + file_name, f.write)
             z = zipfile.ZipFile(f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}//{file_name}', 'r')
@@ -96,6 +98,7 @@ def ftp_search(region = 'Tulskaja_obl', doctype='orderplan', eisdocno='202203663
                 if item.endswith('.xml') and eisdocno in item and ('Notification' in item or 'contract_' in item or 'tenderPlan2020' in item or 'Protocol' in item):
                     z.extract(item, f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}')
                     print(f'Файл {item} распакован')
+
 
     ftp.close()
     return last_publication_date_str

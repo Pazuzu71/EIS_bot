@@ -52,7 +52,6 @@ def main():
 
 
 
-
     def get_data(msg):
         '''По полученным данным делаем дела'''
         parameters['eisdocno'] = msg.text
