@@ -2,6 +2,7 @@ from ftplib import FTP
 import os
 import datetime
 import zipfile
+from db import sql_connection, insert, select, conn_close, select_like
 
 
 def create_dir(directory_name = 'Temp'):
@@ -41,9 +42,21 @@ def dir_choice(last_publication_date, date_now = datetime.datetime.now()):
     return directory
 
 
+def journal_search(eisdocno='202203663000336001'):
+    pass
+
+
 def ftp_search(region = 'Tulskaja_obl', doctype='orderplan', eisdocno='202203663000336001', last_publication_date = datetime.datetime.strptime('26.05.2022 11:56', '%d.%m.%Y %H:%M')):
     '''Поиск файлов на ФТП и закачка их во временную папку'''
 
+    '''Определяем папку на ФТП'''
+    directory = dir_choice(last_publication_date = last_publication_date)
+    '''Дата публикации в формате строки для поиска архива по наименованию '''
+    if directory in ('currMonth', 'prevMonth'):
+        last_publication_date_str = datetime.datetime.strftime(last_publication_date, '%Y%m%d')
+    else:
+        last_publication_date_str = datetime.datetime.strftime(last_publication_date, '%Y%m')
+    print('last_publication_date_str', last_publication_date_str)
     '''Словарь типов документов (ключ: часть ссылки в адресной строке, значение: папка на фтп)'''
     doctype_dict = {
         'order': 'notifications',
@@ -58,49 +71,71 @@ def ftp_search(region = 'Tulskaja_obl', doctype='orderplan', eisdocno='202203663
         'orderplan': 'tenderPlan2020',
         'protocol': 'Protocol'
     }
+
+    files, journal_files = [], []
     '''Подключение к ФТП'''
     ftp = FTP('ftp.zakupki.gov.ru')
     ftp.login('free', 'free')
     ftp.set_pasv(True)
+
     '''Рабочая папка на фтп '''
-    directory = dir_choice(last_publication_date = last_publication_date)
-
     ftp.cwd(f'fcs_regions//{region}//{doctype_dict.get(doctype)}//{directory}')
+    ftp.dir(files.append)
 
-    if directory in ('currMonth', 'prevMonth'):
-        last_publication_date_str = datetime.datetime.strftime(last_publication_date, '%Y%m%d')
-    else:
-        last_publication_date_str = datetime.datetime.strftime(last_publication_date, '%Y%m')
-    print('last_publication_date_str', last_publication_date_str)
     create_dir(directory_name='Temp')
     create_dir(directory_name=f'Temp//{doctype_dict.get(doctype)}')
     create_dir(directory_name=f'Temp//{doctype_dict.get(doctype)}//{eisdocno}')
     create_dir(directory_name=f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}')
-    # clean_dir(directory_name='Temp')
-    # clean_dir(f'Temp//{eisdocno}')
     clean_dir(f'Temp//{eisdocno}//{last_publication_date_str}')
 
     '''Создаем список файлов работчей папки ФТП'''
-    files = []
-    ftp.dir(files.append)
-    '''Перебираем каждый архив из списка файлов - скачиваем в темп, ищем нужный файл в архиве'''
-    # print('****************ftp_search*****************')
-    # print(files)
-    for file in files:
-        tokens = file.split()
-        file_name = tokens[8]
-        if file_name.startswith(f'{filename_dict.get(doctype).lower()}_{region}_{last_publication_date_str}') or \
-                file_name.startswith(f'{filename_dict.get(doctype)}_{region}_{last_publication_date_str}'):
-            with open(f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}//{file_name}', 'wb') as f:
-                ftp.retrbinary('RETR ' + file_name, f.write)
-            z = zipfile.ZipFile(f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}//{file_name}', 'r')
-            for item in z.namelist():
-                if item.endswith('.xml') and eisdocno in item and ('Notification' in item or 'contract_' in item or 'tenderPlan2020' in item or 'Protocol' in item):
-                    z.extract(item, f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}')
-                    print(f'Файл {item} распакован')
 
+    conn = sql_connection()
+    journal_files = select_like(conn, f'{filename_dict.get(doctype).lower()}_{region}_{last_publication_date_str}', eisdocno) + \
+                    select_like(conn, f'{filename_dict.get(doctype)}_{region}_{last_publication_date_str}', eisdocno)
+    journal_files = list(set([x[0] for x in journal_files]))
+    conn_close(conn)
+    if journal_files:
+        print('journal_files', journal_files)
+        for file_name in journal_files:
+            with open(f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}//{file_name}',
+                      'wb') as f:
+                ftp.retrbinary('RETR ' + file_name, f.write)
+            z = zipfile.ZipFile(f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}//{file_name}',
+                                'r')
+            for item in z.namelist():
+                if not directory and item.endswith('.xml') and eisdocno in item and (
+                        'Notification' in item or 'contract_' in item or 'tenderPlan2020' in item or 'Protocol' in item):
+                    z.extract(item, f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}')
+                    print(f'Файл {item} распакован, журнал')
+    else:
+
+        '''Перебираем каждый архив из списка файлов - скачиваем в темп, ищем нужный файл в архиве'''
+        for file in files:
+            tokens = file.split()
+            file_name = tokens[8]
+            if file_name.startswith(f'{filename_dict.get(doctype).lower()}_{region}_{last_publication_date_str}') or \
+                    file_name.startswith(f'{filename_dict.get(doctype)}_{region}_{last_publication_date_str}'):
+                with open(f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}//{file_name}', 'wb') as f:
+                    ftp.retrbinary('RETR ' + file_name, f.write)
+                z = zipfile.ZipFile(f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}//{file_name}', 'r')
+                for item in z.namelist():
+                    if directory and item.endswith('.xml') and eisdocno in item and ('Notification' in item or 'contract_' in item or 'tenderPlan2020' in item or 'Protocol' in item):
+                        z.extract(item, f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}')
+                        print(f'Файл {item} распакован, папка {directory}')
+                    elif not directory and item.endswith('.xml') and eisdocno in item and ('Notification' in item or 'contract_' in item or 'tenderPlan2020' in item or 'Protocol' in item):
+                        z.extract(item, f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}')
+                        print(f'Файл {item} распакован, корневая папка')
+                    if not directory and item.endswith('.xml') and ('Notification' in item or 'contract_' in item or 'tenderPlan2020' in item or 'Protocol' in item):
+                        conn = sql_connection()
+                        entities = (file_name, item, datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'))
+                        records = select(conn, item)
+                        if not records:
+                            insert(conn, entities)
+                        conn_close(conn)
 
     ftp.close()
+
     return last_publication_date_str
 
 
