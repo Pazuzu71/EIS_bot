@@ -12,7 +12,8 @@ def main():
 
     '''Сам бот и хэндлеры к нему'''
 
-    bot = telebot.TeleBot(token)
+    bot = telebot.TeleBot(token, threaded=True)
+    bot.worker_pool = telebot.util.ThreadPool(bot, num_threads=1)
 
     @bot.message_handler(commands=['start'])
     def start(msg):
@@ -21,6 +22,7 @@ def main():
         # kb.add('Хочу скачать что-нибудь с фтп ЕИС', 'Хочу скачать что-нибудь с фтп ЕИС 2')
         bot.send_message(msg.chat.id, 'Бот для скачивания интернета запущен!', reply_markup=kb)
 
+    # @bot.message_handler(func=lambda msg: msg.text in ('Харош жмать на кнопки! Номер некорректный'))
     @bot.message_handler(func=lambda msg: msg.text == 'Хочу скачать что-нибудь с фтп ЕИС 2')
     def download_from_ftp_2(msg):
         kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
@@ -41,6 +43,8 @@ def main():
 
     @bot.message_handler(func=lambda msg: msg.text in ('Извещение', 'Все протоколы по закупке', 'Сведения о контракте', 'План-график 2020'))
     def eisdocno_request(msg):
+        kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=4)
+        kb.add('Хочу скачать что-нибудь с фтп ЕИС 2')
         if msg.text == 'Извещение':
             parameters['doctype'] = 'order'
         if msg.text == 'Все протоколы по закупке':
@@ -49,11 +53,9 @@ def main():
             parameters['doctype'] = 'contract'
         if msg.text == 'План-график 2020':
             parameters['doctype'] = 'orderplan'
-        sent = bot.send_message(msg.chat.id, text='👇👇👇 Введите номер документа: 👇👇👇')
+        sent = bot.send_message(msg.chat.id, text='👇👇👇 Введите номер документа: 👇👇👇', reply_markup=kb)
         # print('sent', sent)
         bot.register_next_step_handler(sent, get_data)
-        # bot.send_message(msg.chat.id, 'Я кончил')
-        # print('Кончил!')
 
 
     # @bot.message_handler(func=lambda msg: msg.text == 'Хочу скачать что-нибудь с фтп ЕИС')
@@ -118,16 +120,18 @@ def main():
                             file_to_send.close()
                 elif msg.text in ('Извещение', 'Все протоколы по закупке', 'Сведения о контракте', 'План-график 2020'):
                     bot.send_message(msg.chat.id, 'Харош жмать на кнопки! Номер некорректный')
+                elif msg.text in ('Хочу скачать что-нибудь с фтп ЕИС 2'):
+                    bot.send_message(msg.chat.id, 'Ха, очень смешно. Еще раз нажми.')
                 else:
                     print('Документов с такими типом и номером не найдено для указанного региона. Увы...')
                     bot.send_message(msg.chat.id, 'Документов с такими типом и номером не найдено для указанного региона. Увы...')
 
-    # while True:
-    #     try:
-    #         bot.polling(none_stop=True, interval=0, timeout=20)
-    #     except:
-    #         print("Exception")
-    bot.polling()
+    while True:
+        try:
+            bot.polling(none_stop=True, interval=0, timeout=20)
+        except:
+            print("Exception")
+    # bot.polling()
 
 
 if __name__ == '__main__':
