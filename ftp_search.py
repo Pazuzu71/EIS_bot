@@ -108,6 +108,7 @@ def ftp_search(region = 'Tulskaja_obl', doctype='orderplan', eisdocno='202203663
                         'Notification' in item or 'contract_' in item or 'tenderPlan2020' in item or 'Protocol' in item):
                     z.extract(item, f'Temp//{doctype_dict.get(doctype)}//{eisdocno}//{last_publication_date_str}')
                     print(f'Файл {item} распакован, журнал')
+            z.close()
     else:
 
         '''Перебираем каждый архив из списка файлов - скачиваем в темп, ищем нужный файл в архиве'''
@@ -133,6 +134,7 @@ def ftp_search(region = 'Tulskaja_obl', doctype='orderplan', eisdocno='202203663
                         if not records:
                             insert(conn, entities)
                         conn_close(conn)
+
 
     ftp.close()
 

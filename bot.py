@@ -124,7 +124,11 @@ def main():
                     bot.send_message(msg.chat.id, 'Ха, очень смешно. Еще раз нажми.')
                 else:
                     print('Документов с такими типом и номером не найдено для указанного региона. Увы...')
-                    bot.send_message(msg.chat.id, 'Документов с такими типом и номером не найдено для указанного региона. Увы...')
+                    bot.send_message(msg.chat.id,
+                                     'Документов с такими типом и номером не найдено для указанного региона. Увы...')
+                if not os.listdir(f'Temp//{x}//{parameters["eisdocno"]}//{last_publication_date_str}'):
+                    bot.send_message(msg.chat.id,
+                                     f'Возможно документ опубликован сегодня и на фтп еще не выложен. Дата публикации: {last_publication_date_str}')
 
     while True:
         try:
