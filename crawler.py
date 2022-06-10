@@ -67,6 +67,7 @@ def search_last_publication_date(doctype='protocol', eisdocno='01663000247220001
 
         for row in rows:
             date = row.find_all(class_="table__cell table__cell-body")[0].text.strip().replace(' (МСК)', '')
+            date = (date, datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'))
             event = row.find_all(class_="table__cell table__cell-body")[1].text.strip()
             # print(date, '+++', event)
             '''Все даты по указанным событиям'''
@@ -75,8 +76,8 @@ def search_last_publication_date(doctype='protocol', eisdocno='01663000247220001
             if (doctype == 'protocol' and
                     ('Размещен «Протокол' in event)
             ):
-                res_rows.append((date, datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'), event))
-                dates.append(datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'))
+                res_rows.append((date, event))
+                dates.append(date)
 
             elif (doctype == 'order' and
                 ('Размещен документ «Извещение о проведении' in event or 'Размещен документ «Изменение извещения о проведении' in event)
@@ -85,9 +86,9 @@ def search_last_publication_date(doctype='protocol', eisdocno='01663000247220001
             ) or (doctype == 'orderplan' and
                     ('Размещен план-график закупок на' in event)
             ):
-                if last_publication_date < datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'):
-                    last_publication_date = datetime.datetime.strptime(date, '%d.%m.%Y %H:%M')
-                res_rows.append((date, datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'), event))
+                if last_publication_date < date:
+                    last_publication_date = date
+                res_rows.append((date, event))
         if not dates:
             dates.append(last_publication_date)
 
