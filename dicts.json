@@ -4,5 +4,11 @@
     "contract": "contracts",
     "orderplan": "plangraphs2020",
     "protocol": "protocols"
+    },
+  "filename_dict": {
+    "order": "notification",
+    "contract": "contract",
+    "orderplan": "tenderPlan2020",
+    "protocol": "Protocol"
     }
 }

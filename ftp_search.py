@@ -2,6 +2,7 @@ from ftplib import FTP
 import os
 import datetime
 import zipfile
+import json
 from db import sql_connection, insert, select, conn_close, select_like
 
 
@@ -58,19 +59,16 @@ def ftp_search(region = 'Tulskaja_obl', doctype='orderplan', eisdocno='202203663
         last_publication_date_str = datetime.datetime.strftime(last_publication_date, '%Y%m')
     print('last_publication_date_str', last_publication_date_str)
     '''Словарь типов документов (ключ: часть ссылки в адресной строке, значение: папка на фтп)'''
-    doctype_dict = {
-        'order': 'notifications',
-        'contract': 'contracts',
-        'orderplan': 'plangraphs2020',
-        'protocol': 'protocols'
-    }
+
+    with open('dicts.json', 'r') as file:
+        dicts = json.load(file)
+    doctype_dict = dicts.get('doctype_dict')
+
     '''Словарь имен документов (ключ: часть ссылки в адресной строке, значение: начало имени файла на фтп)'''
-    filename_dict = {
-        'order': 'notification',
-        'contract': 'contract',
-        'orderplan': 'tenderPlan2020',
-        'protocol': 'Protocol'
-    }
+
+    with open('dicts.json', 'r') as file:
+        dicts = json.load(file)
+    filename_dict = dicts.get('doctype_dict')
 
     files, journal_files = [], []
     '''Подключение к ФТП'''
