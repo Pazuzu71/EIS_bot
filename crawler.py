@@ -67,7 +67,7 @@ def search_last_publication_date(doctype='protocol', eisdocno='01663000247220001
 
         for row in rows:
             date = row.find_all(class_="table__cell table__cell-body")[0].text.strip().replace(' (МСК)', '')
-            date = (date, datetime.datetime.strptime(date, '%d.%m.%Y %H:%M'))
+            date = datetime.datetime.strptime(date, '%d.%m.%Y %H:%M')
             event = row.find_all(class_="table__cell table__cell-body")[1].text.strip()
             # print(date, '+++', event)
             '''Все даты по указанным событиям'''
