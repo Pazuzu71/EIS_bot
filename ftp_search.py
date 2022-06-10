@@ -43,10 +43,6 @@ def dir_choice(last_publication_date, date_now = datetime.datetime.now()):
     return directory
 
 
-def journal_search(eisdocno='202203663000336001'):
-    pass
-
-
 def ftp_search(region = 'Tulskaja_obl', doctype='orderplan', eisdocno='202203663000336001', last_publication_date = datetime.datetime.strptime('26.05.2022 11:56', '%d.%m.%Y %H:%M')):
     '''Поиск файлов на ФТП и закачка их во временную папку'''
 
@@ -58,6 +54,7 @@ def ftp_search(region = 'Tulskaja_obl', doctype='orderplan', eisdocno='202203663
     else:
         last_publication_date_str = datetime.datetime.strftime(last_publication_date, '%Y%m')
     print('last_publication_date_str', last_publication_date_str)
+
     '''Словарь типов документов (ключ: часть ссылки в адресной строке, значение: папка на фтп)'''
 
     with open('dicts.json', 'r') as file:

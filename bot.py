@@ -1,9 +1,13 @@
+import threading
 from crawler import search_last_publication_date
 from ftp_search import ftp_search
 import os
 import telebot
 from telebot import types
 from config import token
+import schedule
+from journal_scheduler import journal_update
+import time
 
 
 def main():
@@ -11,9 +15,10 @@ def main():
     parameters = {}
 
     '''Сам бот и хэндлеры к нему'''
+    bot = telebot.TeleBot(token)
+    # bot = telebot.TeleBot(token, threaded=True)
+    # bot.worker_pool = telebot.util.ThreadPool(bot, num_threads=1)
 
-    bot = telebot.TeleBot(token, threaded=True)
-    bot.worker_pool = telebot.util.ThreadPool(bot, num_threads=1)
 
     @bot.message_handler(commands=['start'])
     def start(msg):
@@ -133,10 +138,20 @@ def main():
     while True:
         try:
             bot.polling(none_stop=True, interval=0, timeout=20)
-        except:
-            print("Exception")
+        except Exception as ex:
+            print('Exception')
+            print('Exception', ex)
+            print("Exception", parameters)
+
     # bot.polling()
 
+def journal_update_start():
+    schedule.every().day.at("19:00").do(journal_update)
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
 
 if __name__ == '__main__':
+    thr1 = threading.Thread(target=journal_update_start)
+    thr1.start()
     main()
