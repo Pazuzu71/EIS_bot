@@ -3,15 +3,14 @@ import os
 import datetime
 import zipfile
 from db import sql_connection, insert, selectz, conn_close
+import json
 
 
 region = 'Tulskaja_obl'
-doctype_dict = {
-    'order': 'notifications',
-    'contract': 'contracts',
-    'orderplan': 'plangraphs2020',
-    'protocol': 'protocols'
-}
+
+with open('dicts.json', 'r') as file:
+    dicts = json.load(file)
+doctype_dict = dicts.get('doctype_dict')
 
 
 '''Рабочая папка на фтп '''

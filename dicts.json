@@ -1,0 +1,8 @@
+{
+  "doctype_dict": {
+    "order": "notifications",
+    "contract": "contracts",
+    "orderplan": "plangraphs2020",
+    "protocol": "protocols"
+    }
+}
