@@ -94,7 +94,7 @@ def main():
 
         parameters['eisdocno'] = msg.text
         print(parameters)
-        last_publication_dates = search_last_publication_date(doctype=parameters['doctype'],
+        last_publication_dates, y = search_last_publication_date(doctype=parameters['doctype'],
                                                              eisdocno=parameters['eisdocno'])
         print('last_publication_dates', last_publication_dates)
         # last_publication_date = search_last_publication_date(doctype=parameters['doctype'],
@@ -105,14 +105,22 @@ def main():
                                                    last_publication_date=last_publication_date)
 
             '''Удаляем архивы после поиска xml'''
-            if parameters['doctype'] == 'contract':
+            if y == 'contract':
                 x = 'contracts'
-            if parameters['doctype'] == 'order':
+            if y == 'order':
                 x = 'notifications'
-            if parameters['doctype'] == 'orderplan':
+            if y == 'orderplan':
                 x = 'plangraphs2020'
-            if parameters['doctype'] == 'protocol':
+            if y == 'protocol':
                 x = 'protocols'
+            # if parameters['doctype'] == 'contract':
+            #     x = 'contracts'
+            # if parameters['doctype'] == 'order':
+            #     x = 'notifications'
+            # if parameters['doctype'] == 'orderplan':
+            #     x = 'plangraphs2020'
+            # if parameters['doctype'] == 'protocol':
+            #     x = 'protocols'
             for path, dirs, files in os.walk(f'Temp//{x}//{parameters["eisdocno"]}//{last_publication_date_str}'):
                 if files:
                     for file in files:

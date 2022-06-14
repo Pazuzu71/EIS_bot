@@ -101,13 +101,13 @@ def search_last_publication_date(doctype='protocol', eisdocno='01663000247220001
         print('*******************************************')
         print('(last_publication_date)', last_publication_date, '+++')
 
-        return dates
+        return dates, doctype
 
         # return last_publication_date
     else:
         dates = []
         dates.append(datetime.datetime.strptime('01.01.1970 00:00', '%d.%m.%Y %H:%M'))
-        return dates
+        return dates, doctype
         # return datetime.datetime.strptime('01.01.1970 00:00', '%d.%m.%Y %H:%M')
 
 
