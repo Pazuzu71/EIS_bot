@@ -65,7 +65,7 @@ def ftp_search(region = 'Tulskaja_obl', doctype='orderplan', eisdocno='202203663
 
     with open('dicts.json', 'r') as file:
         dicts = json.load(file)
-    filename_dict = dicts.get('doctype_dict')
+    filename_dict = dicts.get('filename_dict')
 
     files, journal_files = [], []
     '''Подключение к ФТП'''
