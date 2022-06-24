@@ -8,6 +8,7 @@ from config import token
 import schedule
 from journal_scheduler import journal_update
 import time
+from datetime import datetime
 
 
 def main():
@@ -27,7 +28,6 @@ def main():
         # kb.add('Хочу скачать что-нибудь с фтп ЕИС', 'Хочу скачать что-нибудь с фтп ЕИС 2')
         bot.send_message(msg.chat.id, 'Бот для скачивания интернета запущен!', reply_markup=kb)
 
-    # @bot.message_handler(func=lambda msg: msg.text in ('Харош жмать на кнопки! Номер некорректный'))
     @bot.message_handler(func=lambda msg: msg.text == 'Хочу скачать что-нибудь с фтп ЕИС 2')
     def download_from_ftp_2(msg):
         kb = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
@@ -59,68 +59,35 @@ def main():
         if msg.text == 'План-график 2020':
             parameters['doctype'] = 'orderplan'
         sent = bot.send_message(msg.chat.id, text='👇👇👇 Введите номер документа: 👇👇👇', reply_markup=kb)
-        # print('sent', sent)
         bot.register_next_step_handler(sent, get_data)
-
-
-    # @bot.message_handler(func=lambda msg: msg.text == 'Хочу скачать что-нибудь с фтп ЕИС')
-    # def download_from_ftp(msg):
-    #     kb = types.InlineKeyboardMarkup(row_width=5)
-    #     btn1 = types.InlineKeyboardButton('Тульская область', callback_data='Tulskaja_obl')
-    #     kb.add(btn1)
-    #     bot.send_message(msg.chat.id, text='Выбрать регион', reply_to_message_id=msg.id, reply_markup=kb)
-    #
-    # @bot.callback_query_handler(func=lambda callback: True)
-    # def callbacks(callback):
-    #
-    #     if callback.data == 'Tulskaja_obl':
-    #         parameters['region'] = callback.data
-    #         kb = types.InlineKeyboardMarkup(row_width=2)
-    #         btn1 = types.InlineKeyboardButton('Извещение', callback_data='order')
-    #         btn2 = types.InlineKeyboardButton('Все протоколы по закупке', callback_data='protocol')
-    #         btn3 = types.InlineKeyboardButton('Сведения о контракте', callback_data='contract')
-    #         btn4 = types.InlineKeyboardButton('План-график 2020', callback_data='orderplan')
-    #         kb.add(btn1, btn2, btn3, btn4)
-    #         bot.edit_message_text(text='Выбрать тип документа', chat_id=callback.message.chat.id, message_id=callback.message.id,reply_markup=kb)
-    #
-    #     if callback.data in ('order', 'contract', 'orderplan', 'protocol'):
-    #         parameters['doctype'] = callback.data
-    #         sent = bot.edit_message_text(text='👇👇👇 Введите номер документа: 👇👇👇', chat_id=callback.message.chat.id, message_id=callback.message.id)
-    #         bot.register_next_step_handler(sent, get_data)
 
 
     def get_data(msg):
         '''По полученным данным делаем дела'''
-
+        print(f'{datetime.strftime(datetime.now(), "%d.%m.%Y %H:%M")} {msg.from_user.first_name} {msg.from_user.last_name} {msg.from_user.username} ищет {parameters["doctype"]} {msg.text}')
         parameters['eisdocno'] = msg.text
         print(parameters)
-        last_publication_dates, y = search_last_publication_date(doctype=parameters['doctype'],
+        last_publication_dates, y, z = search_last_publication_date(doctype=parameters['doctype'],
                                                              eisdocno=parameters['eisdocno'])
         print('last_publication_dates', last_publication_dates)
         # last_publication_date = search_last_publication_date(doctype=parameters['doctype'],
         #                                                      eisdocno=parameters['eisdocno'])[0]
+        '''Удаляем архивы после поиска xml'''
+        if y == 'contract':
+            x = 'contracts'
+        if y == 'order':
+            x = 'notifications'
+        if y == 'orderplan':
+            x = 'plangraphs2020'
+        if y == 'protocol':
+            x = 'protocols'
+
         for last_publication_date in last_publication_dates:
-            last_publication_date_str = ftp_search(region=parameters['region'], doctype=parameters['doctype'],
-                                                   eisdocno=parameters['eisdocno'],
+            last_publication_date_str = ftp_search(region=parameters['region'], doctype=y,
+                                                   eisdocno=z,
                                                    last_publication_date=last_publication_date)
 
-            '''Удаляем архивы после поиска xml'''
-            if y == 'contract':
-                x = 'contracts'
-            if y == 'order':
-                x = 'notifications'
-            if y == 'orderplan':
-                x = 'plangraphs2020'
-            if y == 'protocol':
-                x = 'protocols'
-            # if parameters['doctype'] == 'contract':
-            #     x = 'contracts'
-            # if parameters['doctype'] == 'order':
-            #     x = 'notifications'
-            # if parameters['doctype'] == 'orderplan':
-            #     x = 'plangraphs2020'
-            # if parameters['doctype'] == 'protocol':
-            #     x = 'protocols'
+
             for path, dirs, files in os.walk(f'Temp//{x}//{parameters["eisdocno"]}//{last_publication_date_str}'):
                 if files:
                     for file in files:
@@ -154,10 +121,14 @@ def main():
     # bot.polling()
 
 def journal_update_start():
-    schedule.every().day.at("19:00").do(journal_update)
+    schedule.every().day.at("10:30").do(journal_update)
     while True:
-        schedule.run_pending()
-        time.sleep(1)
+        try:
+            schedule.run_pending()
+            time.sleep(1)
+        except Exception as ex:
+            print('Ошибка обновления журнала',ex)
+
 
 if __name__ == '__main__':
     thr1 = threading.Thread(target=journal_update_start)

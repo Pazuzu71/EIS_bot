@@ -43,9 +43,18 @@ def select(conn, column):
     # print('select_records', records)
     return records
 
+
 def selectz(conn, column):
     cur = conn.cursor()
     cur.execute('''select zipname from journal_dg_tmp where zipname = ?''', (column,))
+    records = cur.fetchall()
+    # print('select_records', records)
+    return records
+
+
+def selectz_distinct(conn):
+    cur = conn.cursor()
+    cur.execute('''select distinct(zipname) from journal_dg_tmp''')
     records = cur.fetchall()
     # print('select_records', records)
     return records
