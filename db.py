@@ -90,3 +90,4 @@ if __name__ == '__main__':
     entities = ('contract_Tulskaja_obl_2022051100_2022051200_001.xml.zip', 'contract_1710405073922000045_73202813.xml',
                datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S'))
     insert(conn, entities)
+    conn_close(conn)

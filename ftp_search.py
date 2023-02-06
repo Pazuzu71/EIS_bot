@@ -33,7 +33,7 @@ def dir_choice(last_publication_date, date_now = datetime.datetime.now()):
         else:
             directory = ''
     elif date_now.year - last_publication_date.year == 1:
-        if date_now.month == '01' and last_publication_date.month == '12':
+        if date_now.month == 1 and last_publication_date.month == 12:
             directory = 'prevMonth'
         else:
             directory = ''
